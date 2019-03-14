@@ -1,3 +1,4 @@
+from shapely.geometry import mapping, Point, Polygon
 import geopandas as gpd
 import fiona
 
@@ -8,6 +9,8 @@ import cv2
 import requests
 
 import math
+import geoplot
+
 
 def get_key():
     with open('apikey.txt') as f:
@@ -54,7 +57,6 @@ def test_distance_calc():
 
 
 def main():
-    print(get_key())
     test_distance_calc()
 
     lat = -20.3152889
@@ -64,16 +66,25 @@ def main():
     base_url = """
         https://maps.googleapis.com/maps/api/staticmap?center=LAT,LON&zoom=ZOOM&size=
         1024x1024&maptype=MAPTYPE&key=YOUR_API_KEY"""
+    """
     opencv_image = get_image(base_url, lat, lon, maptype, zoom)
     cv2.imshow('original image', opencv_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-    exit(0)
+    """
     fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
     fiona.drvsupport.supported_drivers['KML'] = 'rw'  # enable KML support which is disabled by default
 
-    geo_data = gpd.read_file("./data/Edificacoes.kml")
+    geo_data = gpd.read_file("./data/Bairros.kml")
+    point = Point(-40.288799, -20.315146)
+
+    selected = None
+    for g in geo_data['geometry']:
+        if point.within(g):
+            selected = g
+            break
+
+    print(selected)
 
 
 if __name__ == "__main__":
