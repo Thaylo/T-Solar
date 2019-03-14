@@ -1,0 +1,4 @@
+*.kml
+apikey.txt
+.idea
+venv
