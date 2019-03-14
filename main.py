@@ -9,8 +9,9 @@ import cv2
 import requests
 
 import math
-import geoplot
+import os
 
+import threading
 
 def get_key():
     with open('apikey.txt') as f:
@@ -56,8 +57,37 @@ def test_distance_calc():
         exit(0)
 
 
+def generate_region_of_study():
+    if not os.path.isfile('./data/Enseada.kml'):
+        geo_data = gpd.read_file("./data/Bairros.kml")
+        point = Point(-40.288799, -20.315146) # arbitrary point at Enseada do Sua
+        selected = None
+        for g in geo_data['geometry']:
+            if point.within(g):
+                selected = g
+                break
+        # print(selected)
+        del geo_data['geometry']
+        geo_data['geometry'] = selected
+        geo_data.to_file('./data/Enseada.kml', driver='KML')
+        return geo_data
+    else:
+        return gpd.read_file("./data/Enseada.kml")
+
+
+def get_geometries_within_region(region, geometries):
+    region_boundary = region.ix[0].geometry
+    return geometries[geometries.geometry.within(region_boundary)]
+
+
+def fiona_driver_config():
+    fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
+    fiona.drvsupport.supported_drivers['KML'] = 'rw'  # enable KML support which is disabled by default
+
+
 def main():
     test_distance_calc()
+    fiona_driver_config()
 
     lat = -20.3152889
     lon = -40.2889104
@@ -72,19 +102,21 @@ def main():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     """
-    fiona.drvsupport.supported_drivers['kml'] = 'rw'  # enable KML support which is disabled by default
-    fiona.drvsupport.supported_drivers['KML'] = 'rw'  # enable KML support which is disabled by default
+    filter_buildings_within_region()
 
-    geo_data = gpd.read_file("./data/Bairros.kml")
-    point = Point(-40.288799, -20.315146)
+def worker(kml_data):
+    kml_data.to_file('./data/Edificacoes_Enseada.kml', driver='KML')
 
-    selected = None
-    for g in geo_data['geometry']:
-        if point.within(g):
-            selected = g
-            break
-
-    print(selected)
+def filter_buildings_within_region():
+    print("Generating region border")
+    enseada_region = generate_region_of_study()
+    print("Reading building dataset")
+    geo_data = gpd.read_file("./data/Edificacoes.kml")
+    print("Filtering building dataset")
+    buildings_at_region = get_geometries_within_region(enseada_region, geo_data)
+    t = threading.Thread(target=worker, args=(buildings_at_region,))
+    t.start()
+    t.join()
 
 
 if __name__ == "__main__":
