@@ -25,7 +25,7 @@ numpy==1.16.2
 opencv-python==4.0.0.21
 pandas==0.24.1
 pathlib2==2.3.3
-Pillow==5.4.1
+Pillow==6.2.0
 pluggy==0.9.0
 py==1.8.0
 pyparsing==2.3.1
